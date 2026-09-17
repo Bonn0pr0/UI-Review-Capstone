@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/models/project.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/status_badge.dart';
@@ -46,82 +47,135 @@ class _ReviewWorkspaceScreenState extends ConsumerState<ReviewWorkspaceScreen> {
       orElse: () => projectState.documents.first,
     );
 
+    final reviewState = ref.watch(reviewProvider);
+    final findingsCount = reviewState.findings.length;
+
     if (isMobile) {
       return DefaultTabController(
         length: 2,
         child: Scaffold(
           backgroundColor: AppColors.background,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(104),
-            child: Container(
-              color: AppColors.surface,
-              child: Column(
-                children: [
-                  // Top Title & Document Selector
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => ref.read(navigationProvider.notifier).setTab(NavigationTab.projects),
-                          icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                          tooltip: 'Return to Projects List',
-                          color: AppColors.textBody,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                document.projectName,
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textHeading,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                '${document.id} (${document.version})',
-                                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
-                              ),
-                            ],
+          appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            elevation: 0,
+            leading: IconButton(
+              onPressed: () => ref.read(navigationProvider.notifier).setTab(NavigationTab.projects),
+              icon: const Icon(Icons.arrow_back_rounded, size: 20),
+              tooltip: 'Quay lại danh sách',
+              color: AppColors.textHeading,
+            ),
+            titleSpacing: 0,
+            title: InkWell(
+              onTap: () => _showDocumentSelectorSheet(context, projectState.documents, document.id),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            document.projectName,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textHeading,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        StatusBadge(status: document.status),
-                      ],
-                    ),
-                  ),
-                  // Segmented Tabs
-                  TabBar(
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: AppColors.textMuted,
-                    indicatorColor: AppColors.primary,
-                    indicatorWeight: 3,
-                    labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
-                    unselectedLabelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500),
-                    tabs: const [
-                      Tab(
-                        iconMargin: EdgeInsets.only(bottom: 2),
-                        icon: Icon(Icons.description_outlined, size: 18),
-                        text: 'Tài liệu (Document)',
+                          Text(
+                            '${document.id} (${document.version})',
+                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
+                          ),
+                        ],
                       ),
-                      Tab(
-                        iconMargin: EdgeInsets.only(bottom: 2),
-                        icon: Icon(Icons.auto_awesome_rounded, size: 18),
-                        text: 'Đánh giá & AI',
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.primary),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: StatusBadge(status: document.status),
+              ),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(44),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: TabBar(
+                  indicator: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
                       ),
                     ],
                   ),
-                ],
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.textMuted,
+                  labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+                  unselectedLabelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
+                  tabs: [
+                    const Tab(
+                      height: 34,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.description_outlined, size: 16),
+                          SizedBox(width: 6),
+                          Text('Văn bản'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      height: 34,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded, size: 16),
+                          const SizedBox(width: 6),
+                          const Text('Đánh giá & AI'),
+                          if (findingsCount > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$findingsCount',
+                                style: GoogleFonts.inter(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           body: TabBarView(
             children: [
-              // Tab 1: Document Viewer Pane
+              // Tab 1: Document Viewer Pane (Mobile-friendly layout)
               DocumentViewerPane(document: document),
 
               // Tab 2: AI Analysis & Manual Review
@@ -129,14 +183,14 @@ class _ReviewWorkspaceScreenState extends ConsumerState<ReviewWorkspaceScreen> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           AIAnalysisSection(),
-                          SizedBox(height: 16),
+                          SizedBox(height: 14),
                           ManualReviewSection(),
-                          SizedBox(height: 16),
+                          SizedBox(height: 14),
                         ],
                       ),
                     ),
@@ -281,6 +335,94 @@ class _ReviewWorkspaceScreenState extends ConsumerState<ReviewWorkspaceScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDocumentSelectorSheet(
+    BuildContext context,
+    List<ProjectDocument> documents,
+    String currentDocId,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Chọn tài liệu cần thẩm định',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textHeading,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...documents.map((doc) {
+                final isSelected = doc.id == currentDocId;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primaryLight : AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary.withValues(alpha: 0.4) : AppColors.border,
+                    ),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    leading: Icon(
+                      Icons.description_rounded,
+                      color: isSelected ? AppColors.primary : AppColors.textMuted,
+                      size: 22,
+                    ),
+                    title: Text(
+                      doc.projectName,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isSelected ? AppColors.primaryDark : AppColors.textHeading,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${doc.id} • ${doc.version} • ${doc.groupName}',
+                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
+                        : const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textMuted),
+                    onTap: () {
+                      ref.read(navigationProvider.notifier).openReviewWorkspace(doc.id);
+                      ref.read(reviewProvider.notifier).setDocument(doc.id);
+                      Navigator.pop(context);
+                    },
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 }

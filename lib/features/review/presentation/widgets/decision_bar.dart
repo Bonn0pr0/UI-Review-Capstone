@@ -156,8 +156,13 @@ class DecisionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 20,
+        vertical: isMobile ? 10 : 16,
+      ),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
@@ -171,73 +176,85 @@ class DecisionBar extends ConsumerWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Left: Save draft
-          OutlinedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Review draft comments and rubrics autosaved.'),
-                  backgroundColor: AppColors.textHeading,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Left: Save draft
+            IconButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã lưu nháp nhận xét và bảng điểm.'),
+                    backgroundColor: AppColors.textHeading,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.save_outlined, size: 18),
+              tooltip: 'Lưu nháp đánh giá',
+              style: IconButton.styleFrom(
+                side: const BorderSide(color: AppColors.border),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.all(10),
+              ),
             ),
-            child: const Icon(Icons.save_outlined, size: 16),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Request Revision (Amber)
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _handleRequestRevision(context, ref),
-              icon: const Icon(Icons.published_with_changes_rounded, size: 14),
-              label: Text(
-                'Request Revision',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.warning,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            // Request Revision (Amber)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _handleRequestRevision(context, ref),
+                icon: const Icon(Icons.published_with_changes_rounded, size: 16),
+                label: Text(
+                  isMobile ? 'Yêu cầu sửa' : 'Request Revision',
+                  style: GoogleFonts.inter(fontSize: isMobile ? 12 : 13, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.warning,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 6 : 12,
+                    vertical: isMobile ? 12 : 14,
+                  ),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Approve (Green)
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _handleApprove(context, ref),
-              icon: const Icon(Icons.check_circle_outline_rounded, size: 14),
-              label: Text(
-                'Approve Document',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            // Approve (Green)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _handleApprove(context, ref),
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+                label: Text(
+                  isMobile ? 'Duyệt bài' : 'Approve Document',
+                  style: GoogleFonts.inter(fontSize: isMobile ? 12 : 13, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 6 : 12,
+                    vertical: isMobile ? 12 : 14,
+                  ),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -19,6 +19,7 @@ class DocumentViewerPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reviewState = ref.watch(reviewProvider);
     final reviewNotifier = ref.read(reviewProvider.notifier);
+    final isMobile = MediaQuery.of(context).size.width < 768;
 
     return Container(
       decoration: const BoxDecoration(
@@ -29,145 +30,231 @@ class DocumentViewerPane extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Document Viewer Header Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(
-                bottom: BorderSide(color: AppColors.border),
+          // Document Viewer Header Bar (Mobile vs Desktop)
+          if (isMobile)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(bottom: BorderSide(color: AppColors.border)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.error, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      document.documentTitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textHeading,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Mobile Page Stepper Pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        InkWell(
+                          onTap: reviewState.currentPage > 1
+                              ? () => reviewNotifier.setCurrentPage(reviewState.currentPage - 1)
+                              : null,
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            size: 20,
+                            color: reviewState.currentPage > 1 ? AppColors.textHeading : AppColors.textMuted,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            '${reviewState.currentPage}/${document.pageCount}',
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: reviewState.currentPage < document.pageCount
+                              ? () => reviewNotifier.setCurrentPage(reviewState.currentPage + 1)
+                              : null,
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: reviewState.currentPage < document.pageCount ? AppColors.textHeading : AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Mobile Document Tools Sheet Trigger
+                  IconButton(
+                    onPressed: () => _showMobileDocumentMenu(context, ref, reviewState, reviewNotifier),
+                    icon: const Icon(Icons.tune_rounded, size: 18, color: AppColors.primary),
+                    tooltip: 'Document Tools & Outline',
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            )
+          else
+            // Desktop Viewer Toolbar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.error, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          document.documentTitle,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textHeading,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${document.projectName} • ${document.version}',
+                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Outline Toggle
+                  IconButton(
+                    onPressed: () => reviewNotifier.toggleSidebarOutline(),
+                    icon: Icon(
+                      reviewState.isSidebarOutlineOpen ? Icons.view_sidebar_rounded : Icons.view_sidebar_outlined,
+                      size: 19,
+                      color: reviewState.isSidebarOutlineOpen ? AppColors.primary : AppColors.textBody,
+                    ),
+                    tooltip: 'Toggle Document Outline',
+                  ),
+                  const SizedBox(width: 4),
+
+                  // Page Navigation Stepper
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: reviewState.currentPage > 1
+                              ? () => reviewNotifier.setCurrentPage(reviewState.currentPage - 1)
+                              : null,
+                          icon: const Icon(Icons.chevron_left_rounded, size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        ),
+                        Text(
+                          'Page ${reviewState.currentPage} of ${document.pageCount}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textHeading,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: reviewState.currentPage < document.pageCount
+                              ? () => reviewNotifier.setCurrentPage(reviewState.currentPage + 1)
+                              : null,
+                          icon: const Icon(Icons.chevron_right_rounded, size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Zoom Controls
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: reviewState.zoomLevel > 0.6
+                              ? () => reviewNotifier.setZoomLevel(reviewState.zoomLevel - 0.1)
+                              : null,
+                          icon: const Icon(Icons.remove_rounded, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          tooltip: 'Zoom Out',
+                        ),
+                        Text(
+                          '${(reviewState.zoomLevel * 100).toInt()}%',
+                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textHeading),
+                        ),
+                        IconButton(
+                          onPressed: reviewState.zoomLevel < 1.8
+                              ? () => reviewNotifier.setZoomLevel(reviewState.zoomLevel + 0.1)
+                              : null,
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          tooltip: 'Zoom In',
+                        ),
+                        IconButton(
+                          onPressed: () => reviewNotifier.setZoomLevel(1.0),
+                          icon: const Icon(Icons.fit_screen_rounded, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          tooltip: 'Reset Zoom (100%)',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                // Document Icon & Title
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorLight,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.error, size: 18),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        document.documentTitle,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textHeading,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${document.projectName} • ${document.version}',
-                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Outline Toggle
-                IconButton(
-                  onPressed: () => reviewNotifier.toggleSidebarOutline(),
-                  icon: Icon(
-                    reviewState.isSidebarOutlineOpen ? Icons.view_sidebar_rounded : Icons.view_sidebar_outlined,
-                    size: 19,
-                    color: reviewState.isSidebarOutlineOpen ? AppColors.primary : AppColors.textBody,
-                  ),
-                  tooltip: 'Toggle Document Outline',
-                ),
-                const SizedBox(width: 4),
-
-                // Page Navigation Stepper
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: reviewState.currentPage > 1
-                            ? () => reviewNotifier.setCurrentPage(reviewState.currentPage - 1)
-                            : null,
-                        icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                      ),
-                      Text(
-                        'Page ${reviewState.currentPage} of ${document.pageCount}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textHeading,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: reviewState.currentPage < document.pageCount
-                            ? () => reviewNotifier.setCurrentPage(reviewState.currentPage + 1)
-                            : null,
-                        icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-
-                // Zoom Controls
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: reviewState.zoomLevel > 0.6
-                            ? () => reviewNotifier.setZoomLevel(reviewState.zoomLevel - 0.1)
-                            : null,
-                        icon: const Icon(Icons.remove_rounded, size: 16),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                        tooltip: 'Zoom Out',
-                      ),
-                      Text(
-                        '${(reviewState.zoomLevel * 100).toInt()}%',
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textHeading),
-                      ),
-                      IconButton(
-                        onPressed: reviewState.zoomLevel < 1.8
-                            ? () => reviewNotifier.setZoomLevel(reviewState.zoomLevel + 0.1)
-                            : null,
-                        icon: const Icon(Icons.add_rounded, size: 16),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                        tooltip: 'Zoom In',
-                      ),
-                      IconButton(
-                        onPressed: () => reviewNotifier.setZoomLevel(1.0),
-                        icon: const Icon(Icons.fit_screen_rounded, size: 16),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                        tooltip: 'Reset Zoom (100%)',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
 
           // Main Canvas with Document & Optional Outline Sidebar
           Expanded(
@@ -242,18 +329,23 @@ class DocumentViewerPane extends ConsumerWidget {
 
                 // Simulated Document Page Canvas
                 Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-                      child: Transform.scale(
-                        scale: reviewState.zoomLevel,
-                        alignment: Alignment.topCenter,
-                        child: _buildDocumentSheet(context, reviewState, document),
-                      ),
-                    ),
-                  ),
+                  child: isMobile
+                      ? SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                          child: _buildDocumentSheet(context, reviewState, document, isMobile),
+                        )
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                            child: Transform.scale(
+                              scale: reviewState.zoomLevel,
+                              alignment: Alignment.topCenter,
+                              child: _buildDocumentSheet(context, reviewState, document, isMobile),
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -314,19 +406,138 @@ class DocumentViewerPane extends ConsumerWidget {
     );
   }
 
-  Widget _buildDocumentSheet(BuildContext context, ReviewState reviewState, ProjectDocument doc) {
+  void _showMobileDocumentMenu(
+    BuildContext context,
+    WidgetRef ref,
+    ReviewState reviewState,
+    ReviewNotifier reviewNotifier,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Công cụ & Mục lục Tài liệu',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textHeading,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                  ),
+                ],
+              ),
+              const Divider(),
+              const SizedBox(height: 8),
+
+              // Document Sections
+              Text(
+                'CÁC MỤC CHÍNH (SECTIONS)',
+                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 8),
+              _buildOutlineItem(
+                title: 'Abstract & Scope',
+                page: 1,
+                isSelected: reviewState.currentPage == 1,
+                onTap: () {
+                  reviewNotifier.setCurrentPage(1);
+                  Navigator.pop(context);
+                },
+              ),
+              _buildOutlineItem(
+                title: '1. Introduction',
+                page: 1,
+                isSelected: reviewState.currentPage == 1,
+                onTap: () {
+                  reviewNotifier.setCurrentPage(1);
+                  Navigator.pop(context);
+                },
+              ),
+              _buildOutlineItem(
+                title: '2. System Architecture',
+                page: 2,
+                isSelected: reviewState.currentPage == 2,
+                hasWarning: true,
+                onTap: () {
+                  reviewNotifier.setCurrentPage(2);
+                  Navigator.pop(context);
+                },
+              ),
+              _buildOutlineItem(
+                title: '3. Benchmarks & Validation',
+                page: 3,
+                isSelected: reviewState.currentPage == 3,
+                hasWarning: true,
+                onTap: () {
+                  reviewNotifier.setCurrentPage(3);
+                  Navigator.pop(context);
+                },
+              ),
+              _buildOutlineItem(
+                title: '4. Conclusion & Future Work',
+                page: 4,
+                isSelected: reviewState.currentPage == 4,
+                onTap: () {
+                  reviewNotifier.setCurrentPage(4);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDocumentSheet(
+    BuildContext context,
+    ReviewState reviewState,
+    ProjectDocument doc,
+    bool isMobile,
+  ) {
     return Container(
-      width: 680,
-      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 48),
+      width: isMobile ? double.infinity : 680,
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 18 : 48,
+        vertical: isMobile ? 24 : 48,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 4),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
